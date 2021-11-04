@@ -1,86 +1,115 @@
-import base64
-from django.apps import apps
-from django.db.models import Sum
-from django.core.files.base import ContentFile
-from django.core.files.images import ImageFile
+from django.contrib.auth.models import AnonymousUser
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
-from .models import (Ingredient,
-                            Tag,
-                            Recipe_Ingredient,
-                            Recipe)
-
 from users.serializers import CustomUserSerializer
 
-MyUser = apps.get_model('users', 'MyUser')
+from .models import Ingredient, Recipe, RecipeIngredient, Tag
 
 
 class IngredientSerializer(serializers.ModelSerializer):
+    '''сериализатор игредиентов'''
     class Meta:
         fields = '__all__'
         model = Ingredient
 
 
 class TagSerializer(serializers.ModelSerializer):
-     class Meta:
+    '''сериализатор тэгов'''
+    class Meta:
         fields = '__all__'
         model = Tag
 
 
-class Recipe_IngredientCreateSerializer(serializers.ModelSerializer):
+class RecipeIngredientSerializer(serializers.ModelSerializer):
+    '''
+    сериализатор промежуточной модели между рецептами и количеством
+    '''
     id = serializers.PrimaryKeyRelatedField(
         source='ingredient.id',
         queryset=Ingredient.objects.all(),
-        )
-
-    class Meta:
-        fields = ['id', 'amount']
-        model = Recipe_Ingredient
-
-
-class Recipe_IngredientGetSerializer(serializers.ModelSerializer):
+    )
     name = serializers.ReadOnlyField(source='ingredient.name')
     measurement_unit = serializers.CharField(
         source='ingredient.measurement_unit'
-        )
+    )
+
+    def __init__(self, *args, **kwargs):
+        '''
+        конструктор класса переопределен чтобы динамически определять
+        вывод нужных полей с помощью аргумента fields
+        '''
+        fields = kwargs.pop('fields', None)
+        super(RecipeIngredientSerializer, self).__init__(*args, **kwargs)
+        if fields is not None:
+            allowed = set(fields)
+            existing = set(self.fields)
+            for field_name in existing - allowed:
+                self.fields.pop(field_name)
 
     class Meta:
         fields = ['id', 'name', 'measurement_unit', 'amount']
-        model = Recipe_Ingredient
+        model = RecipeIngredient
 
 
 class RecipeGetSerializer(serializers.ModelSerializer):
+    '''сериализатор рецептов для GET-запросов'''
     author = CustomUserSerializer()
-    ingredients = Recipe_IngredientGetSerializer(source='recipe', many=True)
+    ingredients = RecipeIngredientSerializer(source='recipe', many=True)
     image = Base64ImageField()
     tags = TagSerializer(many=True)
+    is_favorited = serializers.SerializerMethodField()
+    is_in_shopping_cart = serializers.SerializerMethodField()
+
+    def __init__(self, *args, **kwargs):
+        '''
+        конструктор класса переопределен чтобы динамически определять
+        вывод нужных полей с помощью аргумента fields
+        '''
+        fields = kwargs.pop('fields', None)
+        super(RecipeGetSerializer, self).__init__(*args, **kwargs)
+        if fields is not None:
+            allowed = set(fields)
+            existing = set(self.fields)
+            for field_name in existing - allowed:
+                self.fields.pop(field_name)
 
     class Meta:
         fields = [
-                'id', 'tags', 'author', 'ingredients', 
-                'name', 'image', 'text', 'cooking_time'
+            'id', 'tags', 'author', 'ingredients',
+            'name', 'is_favorited', 'is_in_shopping_cart',
+            'image', 'text', 'cooking_time'
         ]
         model = Recipe
-    
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        representation['is_favorited'] = instance.is_favorite.filter(
-            id=self.context.get('request', None).user.id
-            ).exists() #or instance.author.id==self.context.get('request', None).user.id)
-        representation['is_in_shopping_cart'] = instance.is_in_shopping_cart.filter(
-            id=self.context.get('request', None).user.id
-        ).exists() #or instance.author.id==self.context.get('request', None).user.id)
-        return representation
-    
 
-class ShortRecipeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Recipe
-        fields = ['id', 'name', 'image', 'cooking_time']
+    def get_is_favorited(self, obj):
+        if isinstance(
+            self.context.get('request', None).user,
+            AnonymousUser,
+        ):
+            return False
+        return obj.is_favorite.filter(
+            id=self.context.get('request', None).user.id
+        ).exists()
+
+    def get_is_in_shopping_cart(self, obj):
+        if isinstance(
+            self.context.get('request', None).user,
+            AnonymousUser,
+        ):
+            return False
+        return obj.is_in_shopping_cart.filter(
+            id=self.context.get('request', None).user.id
+        ).exists()
+
 
 class RecipeCreateSerializer(serializers.ModelSerializer):
-    ingredients = Recipe_IngredientCreateSerializer(source='recipe', many= True)
+    '''сериализатор рецептов для POST-запросов'''
+    ingredients = RecipeIngredientSerializer(
+        source='recipe',
+        many=True,
+        fields=('id', 'amount')
+    )
     image = Base64ImageField()
     tags = serializers.PrimaryKeyRelatedField(
         many=True,
@@ -90,57 +119,53 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
         fields = [
-             'ingredients', 'tags', 'image', 
-             'name', 'text', 'cooking_time'
-            ]
-        
+            'ingredients', 'tags', 'image',
+            'name', 'text', 'cooking_time'
+        ]
+
     def create(self, validated_data):
+        '''
+        метод для создания рецепта переопределен т.к. присутствует
+        вложенный сериализатор в поле ingredients
+        '''
         ingredients = validated_data.pop('recipe')
         validated_data['author'] = self.context.get('request', None).user
         recipe = super().create(validated_data)
         objs = []
         for ingredient in ingredients:
             data = dict(ingredient)
-            objs.append(Recipe_Ingredient(
-                recipe=recipe, 
+            objs.append(RecipeIngredient(
+                recipe=recipe,
                 ingredient=data['ingredient']['id'],
                 amount=data['amount'],
-            )) 
-        Recipe_Ingredient.objects.bulk_create(objs)
+            ))
+        RecipeIngredient.objects.bulk_create(objs)
         return recipe
 
     def update(self, instance, validated_data):
+        '''
+        метод для создания рецепта переопределен т.к. присутствует
+        вложенный сериализатор в поле ingredients
+        '''
         ingredients = validated_data.pop('recipe')
         validated_data['author'] = self.context.get('request', None).user
         instance = super().update(instance, validated_data)
-        Recipe_Ingredient.objects.filter(recipe=instance).delete()
+        RecipeIngredient.objects.filter(recipe=instance).delete()
         objs = []
         for ingredient in ingredients:
             data = dict(ingredient)
-            objs.append(Recipe_Ingredient(
-                recipe=instance, 
+            objs.append(RecipeIngredient(
+                recipe=instance,
                 ingredient=data['ingredient']['id'],
                 amount=data['amount'],
-            )) 
-        Recipe_Ingredient.objects.bulk_create(objs)
+            ))
+        RecipeIngredient.objects.bulk_create(objs)
         return instance
 
     def to_representation(self, instance):
+        '''
+        метод переопделен для вывода необходимых полей
+        с помощью сериализатора для GET-запросов
+        '''
         request = self.context['request']
         return RecipeGetSerializer(instance, context={'request': request}).data
-
-
-class ShoppingCartSerializer(serializers.ModelSerializer):
-    name =serializers.ReadOnlyField()
-    measurement_unit = serializers.ReadOnlyField()
-    total_amount = serializers.SerializerMethodField()
-
-    class Meta:
-        fields = '__all__'
-        model = Ingredient
-    
-    def get_total_amount(self, obj):
-        amount = Ingredient.objects.filter(
-            id=obj.id
-        ).annotate(total_amount=Sum('ingredient__amount')).last()
-        return amount.total_amount

@@ -2,17 +2,12 @@ version: '3.8'
 services:
   db:
     image: postgres:12.4
-    #environment:
-    # POSTGRES_DB: "db"
-    # POSTGRES_PASSWORD: "postgres"
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     env_file:
       - ./.env
   web:
-    build: 
-      context: ../backend
-      dockerfile: Dockerfile
+    image: yanakarausheva/foodgram:latest
     restart: always
     volumes:
       - static_value:/code/backend_static/

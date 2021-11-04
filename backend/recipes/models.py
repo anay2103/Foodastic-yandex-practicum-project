@@ -1,18 +1,21 @@
 from colorfield.fields import ColorField
-from django.db import models
 from django.core.validators import MinValueValidator
+from django.db import models
+
 from users.models import MyUser
+
 
 class Ingredient(models.Model):
     name = models.CharField(
         max_length=250,
         verbose_name='Название',
         unique=True,
-        )
-    measurement_unit= models.CharField(
+    )
+    measurement_unit = models.CharField(
         max_length=250,
         verbose_name='Единица измерения',
     )
+
     class Meta:
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
@@ -22,9 +25,10 @@ class Ingredient(models.Model):
                 fields=['name', 'measurement_unit'],
                 name='unique_ingredient'),
         ]
-    
+
     def __str__(self):
         return self.name
+
 
 class Tag(models.Model):
     name = models.CharField(
@@ -40,6 +44,7 @@ class Tag(models.Model):
     slug = models.SlugField(
         unique=True
     )
+
     class Meta:
         ordering = ['id']
 
@@ -57,10 +62,9 @@ class Recipe(models.Model):
     name = models.CharField(
         max_length=250,
         verbose_name='Название',
-        unique = True,
+        unique=True,
     )
     image = models.ImageField(
-        #upload_to='recipes/%Y/%m/%d/',
         verbose_name='Изображение',
         unique=True,
     )
@@ -68,7 +72,7 @@ class Recipe(models.Model):
         MyUser,
         related_name='is_favorite'
     )
-    is_in_shopping_cart=models.ManyToManyField(
+    is_in_shopping_cart = models.ManyToManyField(
         MyUser,
         related_name='is_in_shopping_cart'
     )
@@ -85,20 +89,21 @@ class Recipe(models.Model):
         Tag,
         related_name='recipes'
     )
-    cooking_time=models.IntegerField(
+    cooking_time = models.IntegerField(
         verbose_name='время приготовления',
         validators=[MinValueValidator(
-            1, 
-            message = 'время приготовления должно быть больше нуля')]
+            1,
+            message='время приготовления должно быть больше нуля')]
     )
+
     class Meta:
         ordering = ['id']
 
     def __str__(self):
         return self.name
-    
 
-class Recipe_Ingredient(models.Model):
+
+class RecipeIngredient(models.Model):
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
@@ -112,8 +117,9 @@ class Recipe_Ingredient(models.Model):
     amount = models.FloatField(
         verbose_name='количество',
         validators=[MinValueValidator(
-            0.01, 
-            message = 'количество ингредиента должно быть больше нуля')]
+            0.01,
+            message='количество ингредиента должно быть больше нуля')]
     )
+
     class Meta:
         ordering = ['id']

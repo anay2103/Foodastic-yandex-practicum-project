@@ -2,9 +2,10 @@ from django.contrib import admin
 
 from .models import Ingredient, Recipe, Recipe_Ingredient, Tag
 
+
 class RecipeIngredientInline(admin.TabularInline):
     model = Recipe_Ingredient
-    extra = 1 
+    extra = 1
 
 
 @admin.register(Ingredient)
@@ -14,7 +15,6 @@ class IngredientAdmin(admin.ModelAdmin):
         'name',
         'measurement_unit',)
     list_filter = ('name',)
-
 
 
 @admin.register(Recipe)
@@ -27,7 +27,7 @@ class RecipeAdmin(admin.ModelAdmin):
 
 
 @admin.register(Tag)
-class RecipeAdmin(admin.ModelAdmin):
+class TagAdmin(admin.ModelAdmin):
     list_display = (
         'name',
         'color',)

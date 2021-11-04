@@ -1,5 +1,5 @@
-from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.db import models
 
 
 class MyUser(AbstractUser):
@@ -15,6 +15,7 @@ class Follow(models.Model):
         MyUser,
         on_delete=models.CASCADE,
         related_name='following')
+
     class Meta:
         constraints = [
             models.UniqueConstraint(
