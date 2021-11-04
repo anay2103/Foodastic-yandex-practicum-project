@@ -6,7 +6,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 DEBUG = os.environ.get('DEBUG', False)
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '62.84.116.179').split(' ')
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '130.193.48.28').split(' ')
 
 SECRET_KEY = os.environ.get(
     'SECRET_KEY',
@@ -19,7 +19,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'api',
     'recipes',
     'users',
     'django.contrib.auth',
@@ -63,7 +62,7 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 
 DATABASES = {
-    'default': {
+     'default': {
         'ENGINE': os.environ.get('DB_ENGINE', 'django.db.backends.postgresql'),
         'NAME': os.environ.get('DB_NAME', 'postgres'),
         'USER': os.environ.get('POSTGRES_USER', 'postgres'),
