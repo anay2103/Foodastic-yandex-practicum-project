@@ -40,6 +40,7 @@ jobs:
         with:
           push: true
           tags: yanakarausheva/foodgram:latest
+          path: ./backend
   deploy:
     runs-on: ubuntu-latest
     needs: build_and_push_to_docker_hub
