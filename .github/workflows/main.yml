@@ -54,6 +54,7 @@ jobs:
         passphrase: ${{ secrets.PASSPHRASE }}
         stack_file_name: docker-compose.yaml
         script: |
+          cd foodgram/infra
           sudo docker pull yanakarausheva/foodgram:latest
           sudo docker-compose stop
           sudo docker-compose rm web
