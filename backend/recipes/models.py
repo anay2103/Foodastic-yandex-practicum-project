@@ -1,10 +1,12 @@
 from colorfield.fields import ColorField
 from django.core.validators import MinValueValidator
 from django.db import models
+
 from users.models import MyUser
 
 
 class Ingredient(models.Model):
+    '''основная модель ингредиента'''
     name = models.CharField(
         max_length=250,
         verbose_name='Название',
@@ -16,8 +18,6 @@ class Ingredient(models.Model):
     )
 
     class Meta:
-        verbose_name = 'Ингредиент'
-        verbose_name_plural = 'Ингредиенты'
         ordering = ['name']
         constraints = [
             models.UniqueConstraint(
@@ -30,6 +30,7 @@ class Ingredient(models.Model):
 
 
 class Tag(models.Model):
+    '''модель тэга'''
     name = models.CharField(
         max_length=100,
         verbose_name='Название',
@@ -52,6 +53,7 @@ class Tag(models.Model):
 
 
 class Recipe(models.Model):
+    '''модель рецепта'''
     author = models.ForeignKey(
         MyUser,
         on_delete=models.SET_NULL,
@@ -103,6 +105,10 @@ class Recipe(models.Model):
 
 
 class RecipeIngredient(models.Model):
+    '''
+    промежуточная модель, связывающая ингредиент и рецепт,
+    с указанием количества
+    '''
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,

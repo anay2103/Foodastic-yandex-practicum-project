@@ -6,7 +6,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 DEBUG = os.environ.get('DEBUG', True)
 
-ALLOWED_HOSTS = ['*']  # os.environ.get('ALLOWED_HOSTS', '*').split(' ')
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '130.193.48.28').split(' ')
 
 SECRET_KEY = os.environ.get(
     'SECRET_KEY',
@@ -67,7 +67,7 @@ DATABASES = {
         'NAME': os.environ.get('DB_NAME', 'postgres'),
         'USER': os.environ.get('POSTGRES_USER', 'postgres'),
         'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'postgres'),
-        'HOST': os.environ.get('DB_HOST', 'db'),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }

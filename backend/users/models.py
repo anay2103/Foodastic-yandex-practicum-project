@@ -3,10 +3,12 @@ from django.db import models
 
 
 class MyUser(AbstractUser):
+    '''стандартная модель Django-пользователя'''
     pass
 
 
 class Follow(models.Model):
+    '''модель подписки на пользователя'''
     user = models.ForeignKey(
         MyUser,
         on_delete=models.CASCADE,
@@ -20,5 +22,9 @@ class Follow(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=['user', 'following'],
-                name='unique follow')
+                name='unique follow'),
+            models.CheckConstraint(
+                check=~models.Q(user=models.F('following')),
+                name='prevent self-follow'
+            ),
         ]

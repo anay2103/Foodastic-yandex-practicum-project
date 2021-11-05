@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import MyUser
+from .models import Follow, MyUser
 
 
 @admin.register(MyUser)
@@ -13,3 +13,8 @@ class MyUserAdmin(UserAdmin):
         'last_name',
         'password',
         'is_active')
+
+
+@admin.register(Follow)
+class FollowAdmin(admin.ModelAdmin):
+    list_display = ('user', 'following')

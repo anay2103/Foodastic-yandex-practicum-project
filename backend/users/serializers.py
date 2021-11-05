@@ -1,21 +1,25 @@
-from django.apps import apps
 from django.contrib.auth.models import AnonymousUser
 from djoser.serializers import TokenCreateSerializer, UserCreateSerializer
-from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
 from .models import Follow, MyUser
 
-Recipe = apps.get_model('recipes', 'Recipe')
-
 
 class CustomLoginSerializer(TokenCreateSerializer):
+    '''
+    сериализатор для страницы авторизации,
+    переопределяет сериализатор Djoser
+    '''
     class Meta:
         model = MyUser
         fields = ['email', 'password']
 
 
 class CustomUserCreateSerializer(UserCreateSerializer):
+    '''
+    сериализатор для страницы создания пользователя,
+    переопределяет сериализатор Djoser
+    '''
     email = serializers.EmailField(required=True, max_length=254)
     first_name = serializers.CharField(required=True)
     last_name = serializers.CharField(required=True)
@@ -26,6 +30,10 @@ class CustomUserCreateSerializer(UserCreateSerializer):
 
 
 class CustomUserSerializer(CustomUserCreateSerializer):
+    '''
+    сериализатор для просмотра списка пользователей,
+    к полям родительского класса добавляется поле подписки
+    '''
     is_subscribed = serializers.SerializerMethodField()
 
     class Meta(CustomUserCreateSerializer.Meta):
@@ -43,15 +51,12 @@ class CustomUserSerializer(CustomUserCreateSerializer):
         ).exists()
 
 
-class UserRecipeSerializer(serializers.ModelSerializer):
-    image = Base64ImageField()
-
-    class Meta:
-        model = Recipe
-        fields = ['id', 'name', 'image', 'cooking_time']
-
-
 class SubscriptionSerializer(CustomUserSerializer):
+    '''
+    сериализатор для просмотра подписок пользователя,
+    к полям родительского класса добавляются
+    рецепты избранных авторов и количество рецептов каждого из них
+    '''
     recipes = serializers.SerializerMethodField()
     count = serializers.SerializerMethodField()
 
@@ -62,10 +67,21 @@ class SubscriptionSerializer(CustomUserSerializer):
         return obj.recipes.count()
 
     def get_recipes(self, obj):
+        '''импорт внутри метода во избежание кольцевого импорта'''
+        from recipes.serializers import RecipeGetSerializer
+        fields = ('id', 'name', 'image', 'cooking_time')
         limit = self.context.get(
             'request', None
         ).query_params.get('recipe_limit')
         if limit:
             recipes = obj.recipes.all().order_by('-id')[:int(limit)]
-            return UserRecipeSerializer(recipes, many=True).data
-        return UserRecipeSerializer(obj.recipes.all(), many=True).data
+            return RecipeGetSerializer(
+                recipes,
+                many=True,
+                fields=fields,
+            ).data
+        return RecipeGetSerializer(
+            obj.recipes.all(),
+            many=True,
+            fields=fields,
+        ).data
