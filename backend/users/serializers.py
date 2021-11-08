@@ -1,6 +1,6 @@
 from django.contrib.auth.models import AnonymousUser
 from djoser.serializers import TokenCreateSerializer, UserCreateSerializer
-from drf_extra_fields import Base64ImageField
+from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
 from .models import Follow, MyUser
