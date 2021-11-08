@@ -3,12 +3,10 @@ from django.db import models
 
 
 class MyUser(AbstractUser):
-    '''стандартная модель Django-пользователя'''
     pass
 
 
 class Follow(models.Model):
-    '''модель подписки на пользователя'''
     user = models.ForeignKey(
         MyUser,
         on_delete=models.CASCADE,

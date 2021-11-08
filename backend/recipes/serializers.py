@@ -1,29 +1,38 @@
 from django.contrib.auth.models import AnonymousUser
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
+from rest_framework.exceptions import ParseError
+
 from users.serializers import CustomUserSerializer
 
 from .models import Ingredient, Recipe, RecipeIngredient, Tag
+from .validators import RecipeCreateValidator
 
 
 class IngredientSerializer(serializers.ModelSerializer):
-    '''сериализатор игредиентов'''
     class Meta:
         fields = '__all__'
         model = Ingredient
 
 
 class TagSerializer(serializers.ModelSerializer):
-    '''сериализатор тэгов'''
     class Meta:
         fields = '__all__'
         model = Tag
 
 
-class RecipeIngredientSerializer(serializers.ModelSerializer):
-    '''
-    сериализатор промежуточной модели между рецептами и количеством
-    '''
+class SerializerMixin:
+    def __init__(self, *args, **kwargs):
+        fields = kwargs.pop('fields', None)
+        super().__init__(*args, **kwargs)
+        if fields is not None:
+            allowed = set(fields)
+            existing = set(self.fields)
+            for field_name in existing - allowed:
+                self.fields.pop(field_name)
+
+
+class RecipeIngredientSerializer(SerializerMixin, serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(
         source='ingredient.id',
         queryset=Ingredient.objects.all(),
@@ -33,45 +42,18 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
         source='ingredient.measurement_unit'
     )
 
-    def __init__(self, *args, **kwargs):
-        '''
-        конструктор класса переопределен чтобы динамически определять
-        вывод нужных полей с помощью аргумента fields
-        '''
-        fields = kwargs.pop('fields', None)
-        super(RecipeIngredientSerializer, self).__init__(*args, **kwargs)
-        if fields is not None:
-            allowed = set(fields)
-            existing = set(self.fields)
-            for field_name in existing - allowed:
-                self.fields.pop(field_name)
-
     class Meta:
         fields = ['id', 'name', 'measurement_unit', 'amount']
         model = RecipeIngredient
 
 
-class RecipeGetSerializer(serializers.ModelSerializer):
-    '''сериализатор рецептов для GET-запросов'''
+class RecipeGetSerializer(SerializerMixin, serializers.ModelSerializer):
     author = CustomUserSerializer()
     ingredients = RecipeIngredientSerializer(source='recipe', many=True)
     image = Base64ImageField()
     tags = TagSerializer(many=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
-
-    def __init__(self, *args, **kwargs):
-        '''
-        конструктор класса переопределен чтобы динамически определять
-        вывод нужных полей с помощью аргумента fields
-        '''
-        fields = kwargs.pop('fields', None)
-        super(RecipeGetSerializer, self).__init__(*args, **kwargs)
-        if fields is not None:
-            allowed = set(fields)
-            existing = set(self.fields)
-            for field_name in existing - allowed:
-                self.fields.pop(field_name)
 
     class Meta:
         fields = [
@@ -81,29 +63,32 @@ class RecipeGetSerializer(serializers.ModelSerializer):
         ]
         model = Recipe
 
-    def get_is_favorited(self, obj):
-        if isinstance(
-            self.context.get('request', None).user,
-            AnonymousUser,
-        ):
+    def get_context_handler(self):
+        request = self.context.get('request')
+        if not request:
+            return None
+        if isinstance(request.user, AnonymousUser):
             return False
+        return request
+
+    def get_is_favorited(self, obj):
+        request = self.get_context_handler()
+        if not request:
+            return None
         return obj.is_favorite.filter(
-            id=self.context.get('request', None).user.id
+            id=request.user.id
         ).exists()
 
     def get_is_in_shopping_cart(self, obj):
-        if isinstance(
-            self.context.get('request', None).user,
-            AnonymousUser,
-        ):
-            return False
+        request = self.get_context_handler()
+        if not request:
+            return None
         return obj.is_in_shopping_cart.filter(
-            id=self.context.get('request', None).user.id
+            id=request.user.id
         ).exists()
 
 
 class RecipeCreateSerializer(serializers.ModelSerializer):
-    '''сериализатор рецептов для POST-запросов'''
     ingredients = RecipeIngredientSerializer(
         source='recipe',
         many=True,
@@ -121,50 +106,43 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             'ingredients', 'tags', 'image',
             'name', 'text', 'cooking_time'
         ]
+        validators = [RecipeCreateValidator()]
+
+    def bulk_create(self, ingredients, recipe):
+        objs = []
+        try:
+            for ingredient in ingredients:
+                data = dict(ingredient)
+                objs.append(RecipeIngredient(
+                    recipe=recipe,
+                    ingredient=data['ingredient']['id'],
+                    amount=data['amount'],
+                ))
+        except KeyError as error:
+            raise ParseError(f'failed to parse the request: {error}')
+        RecipeIngredient.objects.bulk_create(objs)
 
     def create(self, validated_data):
-        '''
-        метод для создания рецепта переопределен т.к. присутствует
-        вложенный сериализатор в поле ingredients
-        '''
         ingredients = validated_data.pop('recipe')
-        validated_data['author'] = self.context.get('request', None).user
+        request = self.context.get('request')
+        if not request:
+            validated_data['author'] = None
+        validated_data['author'] = request.user
         recipe = super().create(validated_data)
-        objs = []
-        for ingredient in ingredients:
-            data = dict(ingredient)
-            objs.append(RecipeIngredient(
-                recipe=recipe,
-                ingredient=data['ingredient']['id'],
-                amount=data['amount'],
-            ))
-        RecipeIngredient.objects.bulk_create(objs)
+        self.bulk_create(ingredients, recipe)
         return recipe
 
     def update(self, instance, validated_data):
-        '''
-        метод для создания рецепта переопределен т.к. присутствует
-        вложенный сериализатор в поле ingredients
-        '''
         ingredients = validated_data.pop('recipe')
-        validated_data['author'] = self.context.get('request', None).user
+        request = self.context.get('request')
+        if not request:
+            validated_data['author'] = None
+        validated_data['author'] = request.user
         instance = super().update(instance, validated_data)
         RecipeIngredient.objects.filter(recipe=instance).delete()
-        objs = []
-        for ingredient in ingredients:
-            data = dict(ingredient)
-            objs.append(RecipeIngredient(
-                recipe=instance,
-                ingredient=data['ingredient']['id'],
-                amount=data['amount'],
-            ))
-        RecipeIngredient.objects.bulk_create(objs)
+        self.bulk_create(ingredients, instance)
         return instance
 
     def to_representation(self, instance):
-        '''
-        метод переопделен для вывода необходимых полей
-        с помощью сериализатора для GET-запросов
-        '''
-        request = self.context['request']
+        request = self.context.get('request')
         return RecipeGetSerializer(instance, context={'request': request}).data

@@ -1,11 +1,10 @@
 from colorfield.fields import ColorField
-from django.core.validators import MinValueValidator
 from django.db import models
+
 from users.models import MyUser
 
 
 class Ingredient(models.Model):
-    '''основная модель ингредиента'''
     name = models.CharField(
         max_length=250,
         verbose_name='Название',
@@ -29,7 +28,6 @@ class Ingredient(models.Model):
 
 
 class Tag(models.Model):
-    '''модель тэга'''
     name = models.CharField(
         max_length=100,
         verbose_name='Название',
@@ -52,7 +50,6 @@ class Tag(models.Model):
 
 
 class Recipe(models.Model):
-    '''модель рецепта'''
     author = models.ForeignKey(
         MyUser,
         on_delete=models.SET_NULL,
@@ -90,10 +87,7 @@ class Recipe(models.Model):
         related_name='recipes'
     )
     cooking_time = models.IntegerField(
-        verbose_name='время приготовления',
-        validators=[MinValueValidator(
-            1,
-            message='время приготовления должно быть больше нуля')]
+        verbose_name='время приготовления'
     )
 
     class Meta:
@@ -104,10 +98,6 @@ class Recipe(models.Model):
 
 
 class RecipeIngredient(models.Model):
-    '''
-    промежуточная модель, связывающая ингредиент и рецепт,
-    с указанием количества
-    '''
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
@@ -119,11 +109,13 @@ class RecipeIngredient(models.Model):
         related_name='recipe',
     )
     amount = models.FloatField(
-        verbose_name='количество',
-        validators=[MinValueValidator(
-            0.01,
-            message='количество ингредиента должно быть больше нуля')]
+        verbose_name='количество'
     )
 
     class Meta:
         ordering = ['id']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['ingredient', 'recipe'],
+                name='unique set of ingredients for recipe'),
+        ]

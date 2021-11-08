@@ -1,19 +1,15 @@
 import django_filters as filters
+
 from recipes.models import Recipe
 
 
 class IngredientFilter(filters.FilterSet):
-    '''фильтр ингредиентов по начальным буквам названия'''
     name = filters.CharFilter(
         field_name='name', lookup_expr='istartswith'
     )
 
 
 class RecipeFilter(filters.FilterSet):
-    '''
-    фильтр рецептов по тэгам, автору
-    наличию в списке избранного и списке покупок
-    '''
     tags = filters.AllValuesMultipleFilter(
         field_name='tags__slug'
     )
