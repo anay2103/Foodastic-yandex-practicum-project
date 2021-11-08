@@ -11,8 +11,12 @@ class RecipeCreateValidator:
             })
 
     def check_negatives(self, field, field_name):
-        if (isinstance(field, int) and field < 0
-                or any([value < 0 for value in field])):
+        if (isinstance(field, int)) and field < 0:
+            self.errors.append({
+                field_name: 'negative values not allowed'
+            })
+        if (isinstance(field, list)) and any(
+                [value < 0 for value in field]):
             self.errors.append({
                 field_name: 'negative values not allowed'
             })
