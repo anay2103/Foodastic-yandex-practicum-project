@@ -4,7 +4,6 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 
 def shopping_list(canvas, text):
-    '''метод создания pdf-файла с помощью библиотеки reportlab'''
     pdfmetrics.registerFont(TTFont('DejaVuSans', 'DejaVuSans.ttf'))
     canvas.setFont('DejaVuSans', 32)
     canvas.drawString(3 * inch, 10 * inch, 'Что купить')
