@@ -105,7 +105,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             'ingredients', 'tags', 'image',
             'name', 'text', 'cooking_time'
         ]
-        validators = [RecipeCreateValidator()]
+        #validators = [RecipeCreateValidator()]
 
     def bulk_create_method(self, recipe, ingredients, model):
         objs = []
