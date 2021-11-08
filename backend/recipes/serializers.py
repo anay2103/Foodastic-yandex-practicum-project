@@ -6,7 +6,8 @@ from rest_framework.exceptions import ParseError
 from users.serializers import CustomUserSerializer
 
 from .models import Ingredient, Recipe, RecipeIngredient, Tag
-from .validators import RecipeCreateValidator
+
+# from .validators import RecipeCreateValidator
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -105,7 +106,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             'ingredients', 'tags', 'image',
             'name', 'text', 'cooking_time'
         ]
-        #validators = [RecipeCreateValidator()]
+        # validators = [RecipeCreateValidator()]
 
     def bulk_create_method(self, recipe, ingredients, model):
         objs = []
