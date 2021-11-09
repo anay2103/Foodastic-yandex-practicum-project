@@ -34,7 +34,7 @@ class LimitSizePagination(PageNumberPagination):
         if not page_size:
             return None
         paginator = super().django_paginator_class(queryset, page_size)
-        page_number = super().get_page_number(request, paginator)
+        page_number = self.get_page_number(request, paginator)
         self.request = request
         try:
             self.page = paginator.page(page_number)
