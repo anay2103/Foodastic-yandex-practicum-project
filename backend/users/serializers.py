@@ -43,7 +43,7 @@ class CustomUserSerializer(CustomUserCreateSerializer):
 class UserRecipeSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(
         queryset=MyUser.recipes
-        )
+    )
     name = serializers.ReadOnlyField()
     image = Base64ImageField()
     cooking_time = serializers.ReadOnlyField()
