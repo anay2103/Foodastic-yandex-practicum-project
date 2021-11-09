@@ -1,5 +1,6 @@
 import io
 
+from django.core.paginator import InvalidPage
 from django.db.models import Sum
 from django.http import FileResponse
 from django_filters.rest_framework import DjangoFilterBackend
@@ -23,6 +24,27 @@ myview = (mixins.ListModelMixin,
 
 class LimitSizePagination(PageNumberPagination):
     page_size_query_param = 'limit'
+
+    def paginate_queryset(self, queryset, request, view=None):
+        '''
+        метод переопределен чтобы исключить 404 ответ при несоответствии
+        номера страницы в запросе и количества отфильтрованных объектов
+        '''
+        page_size = super().get_page_size(request)
+        if not page_size:
+            return None
+        paginator = super().django_paginator_class(queryset, page_size)
+        page_number = super().get_page_number(request, paginator)
+        self.request = request
+        try:
+            self.page = paginator.page(page_number)
+        except InvalidPage:
+            # перенаправляем на первую страницу
+            self.page = paginator.page(1)
+            return paginator.page(1)
+        if paginator.num_pages > 1 and self.template is not None:
+            self.display_page_controls = True
+        return list(self.page)
 
 
 class IngredientView(*myview):
