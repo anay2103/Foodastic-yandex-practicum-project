@@ -1,4 +1,3 @@
-from django.contrib.auth.models import AnonymousUser
 from djoser.serializers import TokenCreateSerializer, UserCreateSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
@@ -32,7 +31,7 @@ class CustomUserSerializer(CustomUserCreateSerializer):
         request = self.context.get('request')
         if not request:
             return None
-        if isinstance(request.user, AnonymousUser):
+        if request.user.is_anonymous:
             return False
         return Follow.objects.filter(
             user=request.user,

@@ -1,10 +1,8 @@
-from django.contrib.auth.models import AnonymousUser
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 from rest_framework.exceptions import ParseError
 
 from users.serializers import CustomUserSerializer
-
 from .models import Ingredient, Recipe, RecipeIngredient, Tag
 from .validators import RecipeCreateValidator
 
@@ -67,7 +65,7 @@ class RecipeGetSerializer(SerializerMixin, serializers.ModelSerializer):
         request = self.context.get('request')
         if not request:
             return None
-        if isinstance(request.user, AnonymousUser):
+        if request.user.is_anomynous:
             return False
         return request
 

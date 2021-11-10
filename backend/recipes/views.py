@@ -11,7 +11,6 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
 from recipes.models import Ingredient, Recipe, Tag
-
 from .filters import IngredientFilter, RecipeFilter
 from .pdfgen import shopping_list
 from .serializers import (IngredientSerializer, RecipeCreateSerializer,
@@ -26,10 +25,6 @@ class LimitSizePagination(PageNumberPagination):
     page_size_query_param = 'limit'
 
     def paginate_queryset(self, queryset, request, view=None):
-        '''
-        метод переопределен чтобы исключить 404 ответ при несоответствии
-        номера страницы в запросе и количества отфильтрованных объектов
-        '''
         page_size = super().get_page_size(request)
         if not page_size:
             return None
@@ -41,7 +36,6 @@ class LimitSizePagination(PageNumberPagination):
         try:
             self.page = paginator.page(page_number)
         except InvalidPage:
-            # перенаправляем на первую страницу
             self.page = paginator.page(1)
             return paginator.page(1)
         if paginator.num_pages > 1 and self.template is not None:
