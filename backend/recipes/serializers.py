@@ -65,7 +65,7 @@ class RecipeGetSerializer(SerializerMixin, serializers.ModelSerializer):
         request = self.context.get('request')
         if not request:
             return None
-        if request.user.is_anomynous:
+        if request.user.is_anomymous:
             return False
         return request
 
