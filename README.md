@@ -1,5 +1,5 @@
-## Foodastic(yandex-practicum-project)
-![Foodram-project workflow](https://github.com/anay2103/foodgram-project-react/actions/workflows/main.yml/badge.svg)
+## Foodastic (yandex-practicum-project)
+![Foodastic workflow](https://github.com/anay2103/foodgram-project-react/actions/workflows/main.yml/badge.svg)
 
 Foodastic - онлайн сервис для публикации кулинарных рецептов. Пользователи могут создавать рецепты, подписываться на публикации других пользователей, добавлять понравившиеся рецепты в список «Избранное» и скачивать список продуктов для приготовления выбранных блюд.
 
