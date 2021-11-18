@@ -7,8 +7,6 @@ Foodastic - онлайн сервис для публикации кулинар
 
 Документация с описанием API endpoints проекта размещена [здесь](http://foodastic.co.vu/api/docs/)
 
-Admin credentials: Mr.Reviewer reviewer@gmail.com qw_123456
-
 ### Установка и начало работы:
 1. Установите Docker согласно [инструкции для вашей ОС](https://docs.docker.com/engine/install/). 
 2. Склонируйте данный репозиторий: 
