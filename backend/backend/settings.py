@@ -6,7 +6,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 DEBUG = os.environ.get('DEBUG', False)
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'foodastic.co.vu').split(' ')
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '51.250.1.10').split(' ')
 
 SECRET_KEY = os.environ.get(
     'SECRET_KEY',
